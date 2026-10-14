@@ -29,10 +29,10 @@ Tam ekran ve çevrimdışı oynamak için: Safari'de **Paylaş → Ana Ekrana Ek
 | `index.html` | Sayfa, iPhone ayarları, "telefonu çevir" ekranı |
 | `game.js` | Oyunun tamamı: çizim, arazi, fizik, bilgisayar rakip, ekranlar, sesler |
 | `sw.js` | Çevrimdışı çalışma için önbellek |
-| `fonts/` | Pixelify Sans yazı tipi (SIL OFL 1.1, `fonts/OFL.txt`), çevrimdışı çalışsın diye repo içinde |
+| `fonts/` | Baloo 2 ExtraBold yazı tipi, Türkçe harfler dahil (SIL OFL 1.1, `fonts/OFL-baloo2.txt`), çevrimdışı çalışsın diye repo içinde |
 | `manifest.webmanifest`, `icons/` | Ana ekran simgesi ve tam ekran ayarı |
 
-Derleme adımı yok. Tüm görseller koddan piksel piksel çiziliyor, sesler Web Audio ile üretiliyor.
+Derleme adımı yok. Tüm görseller kodla vektör olarak çiziliyor ("Oyuncak Bloklar" stili: yuvarlak köşeli bloklar, kalın dış çizgili karakterler), sesler Web Audio ile üretiliyor. Çizimler `game.js` içindeki *Vektör çizimler* bölümünde; `ART` tablosu her şeklin adını çizim fonksiyonuna bağlar.
 
 ## Yerelde denemek
 

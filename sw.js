@@ -1,7 +1,7 @@
 // Çevrimdışı oynamak için önbellek.
 // Önce önbellekten ver (zayıf internette de hemen açılsın), arka planda internetten tazele.
 // Tazelenen sürüm bir sonraki açılışta görünür. Dosya listesi değişirse CACHE adını artır.
-const CACHE = 'war-of-blocks-v2';
+const CACHE = 'war-of-blocks-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -10,8 +10,7 @@ const ASSETS = [
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './fonts/pixelify-sans-700-latin.woff2',
-  './fonts/pixelify-sans-700-latin-ext.woff2',
+  './fonts/baloo2-800.woff',
 ];
 
 self.addEventListener('install', e => {
