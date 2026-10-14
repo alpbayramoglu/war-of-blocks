@@ -12,6 +12,7 @@ const WIND_ACC = 30;       // rüzgâr kademesi başına yatay ivme
 const SIM_DT = 1 / 120;
 const PULL_MAX = 150;      // tam güç için parmağın çekilmesi gereken mesafe
 const WALK_BUDGET = 90;    // tur başına yürüme mesafesi (px)
+const AIM_MIN = 18;        // atış sayılması için en az çekme mesafesi (px)
 const FONT = '"Pixelify Sans", ui-monospace, Menlo, monospace';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -303,6 +304,10 @@ class Terrain {
     }
     this.render();
   }
+  raise(c0, c1) {
+    for (let c = Math.max(0, c0); c <= Math.min(COLS - 1, c1); c++) for (let r = 0; r <= this.water; r++) this.cells[c * ROWS + r] = 1;
+    this.render();
+  }
   thumb() {
     const s = 4, cv = document.createElement('canvas');
     cv.width = COLS * s; cv.height = ROWS * s;
@@ -325,25 +330,25 @@ function makeHeights(fn) {
 
 /* ================= Bölümler ================= */
 const LEVELS = [
-  { island: 0, theme: 'grass', water: 3, h: c => 8 + 1.5 * Math.sin(c / 7) + Math.sin(c / 3), p: 10, e: 43, wind: 0, items: ['snowball'], err: .35, preview: .9 },
-  { island: 0, theme: 'grass', water: 5, h: c => 7 + 4 * Math.cos(2 * Math.PI * c / 54) + 1.2 * Math.sin(c * .9) - (c > 20 && c < 34 ? 1 : 0), p: 8, e: 46, wind: 0, items: ['snowball'], err: .28, preview: .75 },
-  { island: 0, theme: 'grass', water: 4, h: c => 6 + 7 * Math.exp(-Math.pow((c - 27) / 6, 2)) + Math.sin(c / 2.5), p: 9, e: 45, wind: 1, items: ['snowball', 'balloon'], err: .22, preview: .6 },
-  { island: 1, theme: 'snow', water: 4, h: c => 8 + 3 * Math.sin(c / 5 + 1) + 1.5 * Math.sin(c / 2.1), p: 7, e: 47, wind: 1, items: ['snowball', 'balloon'], err: .18, preview: .5 },
-  { island: 1, theme: 'snow', water: 4, h: c => 7 + 2 * Math.sin(c / 4) + (c >= 22 && c <= 32 ? 7 : 0), p: 10, e: 44, wind: 2, items: ['snowball', 'balloon', 'paint'], err: .14, preview: .45 },
-  { island: 1, theme: 'snow', water: 5, h: c => 5 + 6 * Math.max(0, Math.cos(2 * Math.PI * c / 27)) + 1.5 * Math.sin(c / 2), p: 4, e: 50, wind: 3, items: ['snowball', 'balloon', 'paint'], err: .11, preview: .4 },
+  { island: 0, theme: 'grass', water: 3, h: c => 8 + 1.5 * Math.sin(c / 7) + Math.sin(c / 3), p: 10, e: 43, wind: 0, items: ['snowball'], err: .35, preview: 200 },
+  { island: 0, theme: 'grass', water: 5, h: c => 7 + 4 * Math.cos(2 * Math.PI * c / 54) + 1.2 * Math.sin(c * .9) - (c > 20 && c < 34 ? 1 : 0), p: 8, e: 46, wind: 0, items: ['snowball'], err: .28, preview: 170 },
+  { island: 0, theme: 'grass', water: 4, h: c => 6 + 7 * Math.exp(-Math.pow((c - 27) / 6, 2)) + Math.sin(c / 2.5), p: 9, e: 45, wind: 1, items: ['snowball', 'balloon'], err: .22, preview: 140 },
+  { island: 1, theme: 'snow', water: 4, h: c => 8 + 3 * Math.sin(c / 5 + 1) + 1.5 * Math.sin(c / 2.1), p: 7, e: 47, wind: 1, items: ['snowball', 'balloon'], err: .18, preview: 120 },
+  { island: 1, theme: 'snow', water: 4, h: c => 7 + 2 * Math.sin(c / 4) + (c >= 22 && c <= 32 ? 7 : 0), p: 10, e: 44, wind: 2, items: ['snowball', 'balloon', 'paint'], err: .14, preview: 100 },
+  { island: 1, theme: 'snow', water: 5, h: c => 5 + 6 * Math.max(0, Math.cos(2 * Math.PI * c / 27)) + 1.5 * Math.sin(c / 2), p: 4, e: 50, wind: 3, items: ['snowball', 'balloon', 'paint'], err: .11, preview: 90 },
 ];
 const ISLANDS = [{ name: 'ÇİMEN ADASI', color: '#5DBB4A' }, { name: 'KAR ADASI', color: '#7CC4EA' }];
 const ALL_ITEMS = ['snowball', 'balloon', 'paint'];
 
 function mapDef(key) {
-  if (key === 'grass') return Object.assign({}, LEVELS[1], { wind: 1, preview: .6 });
-  if (key === 'snow') return Object.assign({}, LEVELS[3], { wind: 2, preview: .5 });
+  if (key === 'grass') return Object.assign({}, LEVELS[1], { wind: 1, preview: 130 });
+  if (key === 'snow') return Object.assign({}, LEVELS[3], { wind: 2, preview: 110 });
   // sürpriz: her seferinde yeni bir ada
   const th = Math.random() < .5 ? 'grass' : 'snow';
   const a = rand(1, 4), f = rand(3, 7), ph = rand(0, 6);
   const mid = Math.random() < .5 ? rand(4, 8) : -rand(0, 3);
   return {
-    theme: th, water: 3 + Math.floor(rand(0, 3)), wind: 2, preview: .5,
+    theme: th, water: 3 + Math.floor(rand(0, 3)), wind: 2, preview: 110,
     h: c => 7 + a * Math.sin(c / f + ph) + 1.2 * Math.sin(c / 2.3 + ph * 2) + mid * Math.exp(-Math.pow((c - 27) / 6, 2)),
     p: 6 + Math.floor(rand(0, 6)), e: 42 + Math.floor(rand(0, 6)),
   };
@@ -373,10 +378,18 @@ Store.load();
 /* ================= Ses ================= */
 const Sound = {
   ctx: null,
+  // iOS sesi yalnızca dokunma bitince (touchend/pointerup) açar; pointerdown yetmez.
+  // 'playback' oturumu, telefon sessiz moddayken de sesin çalmasını sağlar.
   unlock() {
     try {
+      if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback';
       if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state !== 'running') {
+        this.ctx.resume();
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.ctx.createBuffer(1, 1, 22050);
+        src.connect(this.ctx.destination); src.start(0);
+      }
     } catch (e) {}
   },
   noise(dur, { type = 'lowpass', freq = 900, freqEnd = 0, gain = .5, q = 1 } = {}) {
@@ -531,14 +544,17 @@ function makeTeam(id, cpu, items) {
     spr: id === 0 ? 'penguin' : 'cat', hitSpr: id === 0 ? 'penguinHit' : 'catHit',
     color: id === 0 ? '#2F7DE1' : '#E5483B',
     x: 0, y: 0, vx: 0, vy: 0, grounded: true, spawnCol: 0, walkAnim: 0,
-    ammo: { snowball: Infinity, balloon: 1, paint: 1 }, item: 'snowball', hitShow: false,
+    ammo: { snowball: Infinity, balloon: 1, paint: 1 }, item: 'snowball', hitShow: false, lostTurn: false,
   };
 }
 function spawnCol(T, c0) {
   for (let d = 0; d < COLS; d++) for (const s of [c0 + d, c0 - d]) {
     if (s >= 1 && s <= COLS - 2 && T.top(s) >= T.water) return s;
   }
-  return c0;
+  // Bütün kara oyulmuşsa karakter sonsuza dek suya düşmesin: küçük bir zemin çıkar.
+  const c = clamp(c0, 1, COLS - 2);
+  T.raise(c - 1, c + 1);
+  return c;
 }
 function place(T, ch, c0) {
   const c = spawnCol(T, c0);
@@ -566,6 +582,7 @@ const foe = () => play.teams[1 - play.turn];
 function beginTurn() {
   const ch = cur();
   ch.hitShow = false;
+  for (const t of play.teams) t.lostTurn = false;
   play.phase = 'banner'; play.t = 0; play.aim = null; play.ai = null; play.walkDir = 0; play.walkLeft = WALK_BUDGET;
   const wm = play.def.wind || 0;
   play.wind = wm ? Math.round(rand(-wm, wm)) : 0;
@@ -592,12 +609,19 @@ function charPhysics(ch, dt) {
   }
   if (ch.y > T.waterY + 14 || ch.y > H + 30) splash(ch);
 }
+// Bir karakter aynı turda en fazla bir kalp kaybeder (isabet + itilip suya düşme iki kalp götürmesin).
+function loseHeart(ch) {
+  ch.hitShow = true;
+  if (ch.hearts <= 0 || ch.lostTurn) return false;
+  ch.hearts--; ch.lostTurn = true;
+  return true;
+}
 function splash(ch) {
   const T = play.T;
   Sound.play('splash');
   spawn(ch.x, T.waterY, 18, ['#4FB3F0', '#D6F1FF', '#FFFFFF']);
   words.push({ x: ch.x, y: T.waterY, word: 'ŞAPUR!', size: 26, t: 0 });
-  if (ch.hearts > 0) { ch.hearts--; ch.hitShow = true; }
+  loseHeart(ch);
   const c = spawnCol(T, ch.spawnCol);
   ch.x = c * B + B / 2; ch.y = T.surfaceY(c) - 90; ch.vx = 0; ch.vy = 0; ch.grounded = false;
 }
@@ -635,7 +659,7 @@ function simulate(x, y, vx, vy, item, owner, maxT, path) {
   let n = 0;
   while (p.t < maxT) {
     const hit = stepProj(p, SIM_DT);
-    if (path && (n++ % 6 === 0)) path.push({ x: p.x, y: p.y });
+    if (path && (n++ % 4 === 0)) path.push({ x: p.x, y: p.y });
     if (hit) return Object.assign(hit, { x: p.x, y: p.y });
   }
   return null;
@@ -668,7 +692,7 @@ function explode(x, y, kind) {
     if (ch.id === p.owner) continue; // kendine zarar yok
     const dx = ch.x - x, dy = (ch.y - 18) - y;
     if (Math.hypot(dx, dy) < it.r + 16) {
-      if (ch.hearts > 0) { ch.hearts--; ch.hitShow = true; Sound.play('hit'); }
+      if (loseHeart(ch)) Sound.play('hit');
       ch.vx = Math.sign(dx || 1) * 90; ch.vy = -220; ch.grounded = false;
     }
   }
@@ -895,7 +919,7 @@ function drawPlay(dt) {
   if (play.phase === 'aim') drawAim(ch);
   if (play.proj) drawProj(play.proj);
   drawParts();
-  if (T.theme.flakes) drawFlakes(dt);
+  if (T.theme.flakes) drawFlakes(play.paused ? 0 : dt);
   ctx.restore();
 
   drawHud();
@@ -913,17 +937,22 @@ function drawAim(ch) {
   } else {
     if (!play.aim) return;
     const dx = play.aim.x0 - play.aim.x, dy = play.aim.y0 - play.aim.y, len = Math.hypot(dx, dy);
-    if (len < 12) return;
+    if (len < AIM_MIN) return;
     const pw = Math.min(len / PULL_MAX, 1);
     vx = dx / len * pw * VMAX; vy = dy / len * pw * VMAX; pull = pw;
-    const path = [];
-    simulate(hx, hy, vx, vy, ch.item, ch.id, play.def.preview || .5, path);
-    path.forEach((q, i) => {
-      if (i === 0) return;
-      const r = Math.max(2, 5 - i * .25);
+    // Nişan noktaları yolun yalnızca başını gösterir (preview: px); gerisini çocuk tahmin eder.
+    const path = [], total = play.def.preview || 110;
+    simulate(hx, hy, vx, vy, ch.item, ch.id, 3, path);
+    let left = total, px = hx, py = hy;
+    for (const q of path) {
+      left -= Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y;
+      if (left <= 0) break;
+      const f = left / total, r = Math.round(2 + 3 * f);
+      ctx.save(); ctx.globalAlpha = .35 + .65 * f;
       ctx.fillStyle = INK; ctx.fillRect(q.x - r - 1, q.y - r - 1, r * 2 + 2, r * 2 + 2);
       ctx.fillStyle = '#FFFFFF'; ctx.fillRect(q.x - r, q.y - r, r * 2, r * 2);
-    });
+      ctx.restore();
+    }
   }
   const sp = Math.hypot(vx, vy) || 1;
   const bx = hx - vx / sp * pull * 48, by = hy - vy / sp * pull * 48;
@@ -1074,6 +1103,7 @@ canvas.addEventListener('pointermove', e => {
   if (play && play.aim) { const p = toLogical(e); play.aim.x = p.x; play.aim.y = p.y; }
 });
 function pointerEnd(e) {
+  if (e.type === 'pointerup') Sound.unlock();
   if (e.pointerId !== pointer.id) return;
   pointer.id = null;
   if (pointer.btn && pointer.btn.onUp) pointer.btn.onUp();
@@ -1082,7 +1112,7 @@ function pointerEnd(e) {
     const p = toLogical(e);
     const dx = play.aim.x0 - p.x, dy = play.aim.y0 - p.y, len = Math.hypot(dx, dy);
     play.aim = null;
-    if (e.type === 'pointerup' && len >= 18) {
+    if (e.type === 'pointerup' && len >= AIM_MIN) {
       const pw = Math.min(len / PULL_MAX, 1);
       fire(dx / len * pw * VMAX, dy / len * pw * VMAX);
     }
@@ -1092,6 +1122,7 @@ canvas.addEventListener('pointerup', pointerEnd);
 canvas.addEventListener('pointercancel', pointerEnd);
 ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+['touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, () => Sound.unlock(), { passive: true }));
 document.addEventListener('visibilitychange', () => { if (document.hidden && play && play.phase !== 'over') play.paused = true; });
 const portrait = window.matchMedia('(orientation: portrait)');
 const onOrient = () => { if (portrait.matches && play && play.phase !== 'over') play.paused = true; resize(); };

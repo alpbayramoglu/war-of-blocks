@@ -1,7 +1,7 @@
-// Çevrimdışı oynamak için basit önbellek.
-// Kendi dosyalarımız: önce internetten dene (güncel kalsın), olmazsa önbellekten ver.
-// Google Fonts: önce önbellekten ver.
-const CACHE = 'war-of-blocks-v1';
+// Çevrimdışı oynamak için önbellek.
+// Önce önbellekten ver (zayıf internette de hemen açılsın), arka planda internetten tazele.
+// Tazelenen sürüm bir sonraki açılışta görünür. Dosya listesi değişirse CACHE adını artır.
+const CACHE = 'war-of-blocks-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,8 @@ const ASSETS = [
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './fonts/pixelify-sans-700-latin.woff2',
+  './fonts/pixelify-sans-700-latin-ext.woff2',
 ];
 
 self.addEventListener('install', e => {
@@ -26,26 +28,14 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-        return res;
-      }))
-    );
-    return;
-  }
-
-  if (url.origin !== location.origin) return;
-  e.respondWith(
-    fetch(req).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(req, copy));
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  e.respondWith(caches.open(CACHE).then(async cache => {
+    const hit = await cache.match(req, { ignoreSearch: true });
+    const fresh = fetch(req).then(res => {
+      if (res.ok) cache.put(req, res.clone());
       return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }))
-  );
+    });
+    if (hit) { e.waitUntil(fresh.catch(() => {})); return hit; }
+    return fresh;
+  }));
 });

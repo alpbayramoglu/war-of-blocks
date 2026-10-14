@@ -28,6 +28,7 @@ Tam ekran ve çevrimdışı oynamak için: Safari'de **Paylaş → Ana Ekrana Ek
 | `index.html` | Sayfa, iPhone ayarları, "telefonu çevir" ekranı |
 | `game.js` | Oyunun tamamı: çizim, arazi, fizik, bilgisayar rakip, ekranlar, sesler |
 | `sw.js` | Çevrimdışı çalışma için önbellek |
+| `fonts/` | Pixelify Sans yazı tipi (SIL OFL 1.1, `fonts/OFL.txt`), çevrimdışı çalışsın diye repo içinde |
 | `manifest.webmanifest`, `icons/` | Ana ekran simgesi ve tam ekran ayarı |
 
 Derleme adımı yok. Tüm görseller koddan piksel piksel çiziliyor, sesler Web Audio ile üretiliyor.
@@ -49,9 +50,11 @@ Bölümler `game.js` içindeki `LEVELS` dizisinde. Her bölümde:
 - `wind`: en yüksek rüzgâr (0–3)
 - `items`: açık olan eşyalar
 - `err`: bilgisayarın ne kadar ıskaladığı (büyük sayı, daha kolay)
-- `preview`: nişan noktalarının ne kadar ileriyi gösterdiği (saniye)
+- `preview`: nişan noktalarının yolun ne kadarını gösterdiği (piksel; rakibe kadar uzanmasın diye kısa tutuluyor)
 
-`game.js` dosyasını değiştirdikten sonra `sw.js` içindeki `CACHE` adını artırırsan (`war-of-blocks-v2` gibi), telefona eklenmiş sürüm de güncellenir.
+Telefona eklenmiş oyun önce önbellekten açılır, arka planda yeni sürümü indirir. Yaptığın değişiklik bir sonraki açılışta görünür. Dosya eklersen ya da çıkarırsan `sw.js` içindeki `ASSETS` listesini güncelle ve `CACHE` adını artır (`war-of-blocks-v3` gibi).
+
+Ses iPhone sessiz moddayken de çalar (`navigator.audioSession.type = 'playback'`).
 
 ## GitHub Pages
 
