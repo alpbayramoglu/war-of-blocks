@@ -1,7 +1,8 @@
 // Çevrimdışı oynamak için önbellek.
-// Önce önbellekten ver (zayıf internette de hemen açılsın), arka planda internetten tazele.
-// Tazelenen sürüm bir sonraki açılışta görünür. Dosya listesi değişirse CACHE adını artır.
-const CACHE = 'war-of-blocks-v3';
+// Bütün dosyalar tek sürüm olarak birlikte önbelleğe alınır ve hep önbellekten verilir;
+// böylece yeni index.html ile eski game.js gibi karışık bir sürüm oluşmaz.
+// Her yayında CACHE adını artır: yeni service worker bütün dosyaları birlikte yeniden indirir.
+const CACHE = 'war-of-blocks-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -14,7 +15,10 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' tarayıcının HTTP önbelleğini atlar (GitHub Pages max-age=600 veriyor).
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -28,13 +32,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(caches.open(CACHE).then(async cache => {
-    const hit = await cache.match(req, { ignoreSearch: true });
-    const fresh = fetch(req).then(res => {
-      if (res.ok) cache.put(req, res.clone());
-      return res;
-    });
-    if (hit) { e.waitUntil(fresh.catch(() => {})); return hit; }
-    return fresh;
-  }));
+  e.respondWith(
+    caches.open(CACHE)
+      .then(c => c.match(req, { ignoreSearch: true }))
+      .then(hit => hit || fetch(req))
+  );
 });

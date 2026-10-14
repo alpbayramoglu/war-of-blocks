@@ -53,7 +53,7 @@ Bölümler `game.js` içindeki `LEVELS` dizisinde. Her bölümde:
 - `err`: bilgisayarın ne kadar ıskaladığı (büyük sayı, daha kolay)
 - `preview`: nişan noktalarının yolun ne kadarını gösterdiği (piksel; rakibe kadar uzanmasın diye kısa tutuluyor)
 
-Telefona eklenmiş oyun önce önbellekten açılır, arka planda yeni sürümü indirir. Yaptığın değişiklik bir sonraki açılışta görünür. Dosya eklersen ya da çıkarırsan `sw.js` içindeki `ASSETS` listesini güncelle ve `CACHE` adını artır (`war-of-blocks-v3` gibi).
+Telefona eklenmiş oyun bütün dosyaları tek sürüm olarak önbellekten açar. **Her yayında `sw.js` içindeki `CACHE` adını artır** (`war-of-blocks-v5` gibi); artırmazsan telefon eski sürümde kalır. Yeni sürüm açılışta arka planda iner, maç sürmüyorsa sayfa bir kez kendini yeniler. Dosya ekler ya da çıkarırsan `ASSETS` listesini de güncelle.
 
 Ses iPhone sessiz moddayken de çalar (`navigator.audioSession.type = 'playback'`).
 

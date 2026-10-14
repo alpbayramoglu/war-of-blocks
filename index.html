@@ -58,6 +58,17 @@
   <script src="game.js"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      // Yeni sürüm devreye girince bir kez yenile ki bütün dosyalar aynı sürümden gelsin.
+      // Maç sürüyorsa yarıda kesme; maç bitip menüye dönünce yenile.
+      const hadController = !!navigator.serviceWorker.controller;
+      let pending = false;
+      const reloadWhenIdle = () => {
+        if (!window.__wob || window.__wob.screen !== 'play') location.reload();
+        else setTimeout(reloadWhenIdle, 2000);
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController && !pending) { pending = true; reloadWhenIdle(); }
+      });
       addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
   </script>
