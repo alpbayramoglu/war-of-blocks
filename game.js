@@ -181,6 +181,35 @@ const SPR = {
     "......",
     "..XX.."], pal: { X: '#FFFFFF' } },
 };
+Object.assign(SPR, {
+  fish: { map: [
+    "...BBBB...",
+    ".BBBBBBB.B",
+    "BWPBBBBBBB",
+    "BBBBBBBBBB",
+    ".DDDDDDD.D",
+    "...DDDD..."], pal: { B: '#7FB8E8', D: '#4A86C5', W: '#FFFFFF', P: '#1E2233' } },
+  plane: { map: [
+    "K...............",
+    "KK.......WW.....",
+    "KKRRRRRRRWWRRR.Y",
+    "RRRRRRRRRRRRRRRY",
+    ".RRRRRRRRRRRRRRY",
+    ".....RRRRR......"], pal: { R: '#E5483B', K: '#B8322A', W: '#BFE6FF', Y: '#FFD23F' } },
+  crate: { map: [
+    "BBBBBBBB",
+    "BLLLLLLB",
+    "BLYYYYLB",
+    "BLLLYYLB",
+    "BLLYYLLB",
+    "BLLLLLLB",
+    "BLLYYLLB",
+    "BBBBBBBB"], pal: { B: '#8A5D39', L: '#C99A5B', Y: '#FFD23F' } },
+  chute: { map: [
+    "..RRWWRR..",
+    ".RRWWRRWW.",
+    "RRWWRRWWRR"], pal: { R: '#E84BB0', W: '#FFFFFF' } },
+});
 SPR.penguinHit = { map: SPR.penguin.map.slice(), pal: SPR.penguin.pal };
 SPR.penguinHit.map[2] = ".KWWWKKWWWK.";
 SPR.penguinHit.map[3] = ".KPPPKKPPPK.";
@@ -339,6 +368,7 @@ const LEVELS = [
 ];
 const ISLANDS = [{ name: 'ÇİMEN ADASI', color: '#5DBB4A' }, { name: 'KAR ADASI', color: '#7CC4EA' }];
 const ALL_ITEMS = ['snowball', 'balloon', 'paint'];
+const ITEM_ORDER = ['snowball', 'balloon', 'paint', 'fish'];
 
 function mapDef(key) {
   if (key === 'grass') return Object.assign({}, LEVELS[1], { wind: 1, preview: 130 });
@@ -358,6 +388,8 @@ const ITEMS = {
   snowball: { spr: 'snowball', r: 26, wind: .6, word: 'POF!', sound: 'pof', colors: ['#FFFFFF', '#E6F0F8', '#BFD9EE', '#9B6B43'] },
   balloon: { spr: 'balloon', r: 40, wind: 1.3, word: 'ŞLAP!', sound: 'splash', colors: ['#4FB3F0', '#D6F1FF', '#2E86C9', '#FFFFFF'] },
   paint: { spr: 'paint', r: 30, wind: .9, word: 'ŞAP!', sound: 'splat', colors: ['#E84BB0', '#FF9AD8', '#B8338A'], bounce: true, paintR: 54 },
+  // sadece sürpriz kutudan çıkar: daha düz ve uzağa uçar, rüzgârı pek umursamaz
+  fish: { spr: 'fish', r: 34, wind: .2, grav: .55, word: 'ŞLOP!', sound: 'splat', colors: ['#7FB8E8', '#4A86C5', '#FFFFFF'] },
 };
 
 /* ================= Kayıt ================= */
@@ -423,6 +455,8 @@ const Sound = {
         case 'turn': this.tone(660, .08, { gain: .07 }); this.tone(990, .1, { gain: .07, delay: .09 }); break;
         case 'bounce': this.tone(300, .12, { type: 'sine', to: 600, gain: .18 }); break;
         case 'win': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, .2, { gain: .1, delay: i * .12 })); break;
+        case 'pickup': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, .12, { gain: .09, delay: i * .07 })); break;
+        case 'plane': this.tone(140, 1.4, { type: 'sawtooth', gain: .05, to: 110 }); this.tone(147, 1.4, { type: 'square', gain: .03, to: 115 }); break;
         case 'lose': [392, 330, 262].forEach((f, i) => this.tone(f, .25, { type: 'triangle', gain: .14, delay: i * .18 })); break;
       }
     } catch (e) {}
@@ -527,7 +561,9 @@ function drawParts() {
   for (const w of words) {
     const e = 1 - Math.pow(1 - w.t, 3);
     ctx.save(); ctx.globalAlpha = 1 - w.t * w.t;
-    text(w.word, w.x, w.y - 26 - 22 * e, Math.round(w.size * (.7 + .5 * e)), { color: w.color || '#FFFFFF', lw: 6 });
+    const wy = w.y - 26 - 22 * e;
+    if (w.spr) { centerSprite(w.spr, w.x - 22, wy, 3); text(w.word, w.x + 14, wy, Math.round(w.size * (.7 + .5 * e)), { color: w.color || '#FFFFFF', lw: 6 }); }
+    else text(w.word, w.x, wy, Math.round(w.size * (.7 + .5 * e)), { color: w.color || '#FFFFFF', lw: 6 });
     ctx.restore();
   }
 }
@@ -544,7 +580,7 @@ function makeTeam(id, cpu, items) {
     spr: id === 0 ? 'penguin' : 'cat', hitSpr: id === 0 ? 'penguinHit' : 'catHit',
     color: id === 0 ? '#2F7DE1' : '#E5483B',
     x: 0, y: 0, vx: 0, vy: 0, grounded: true, spawnCol: 0, walkAnim: 0,
-    ammo: { snowball: Infinity, balloon: 1, paint: 1 }, item: 'snowball', hitShow: false, lostTurn: false,
+    ammo: { snowball: Infinity, balloon: 1, paint: 1, fish: 0 }, item: 'snowball', hitShow: false, lostTurn: false,
   };
 }
 function spawnCol(T, c0) {
@@ -572,6 +608,7 @@ function startMatch(mode, li, mapKey, def) {
     mode, li, mapKey, def, T, teams, turn: 0, phase: 'banner', t: 0,
     proj: null, wind: 0, aim: null, walkDir: 0, walkLeft: WALK_BUDGET,
     ai: null, cpuShots: 0, winner: null, overT: 0, paused: false, acc: 0,
+    turnNo: 0, drops: dropTurns(), plane: null, crates: [],
   };
   screen = 'play';
   beginTurn();
@@ -587,7 +624,89 @@ function beginTurn() {
   const wm = play.def.wind || 0;
   play.wind = wm ? Math.round(rand(-wm, wm)) : 0;
   if (!(ch.ammo[ch.item] > 0) || !ch.items.includes(ch.item)) ch.item = 'snowball';
-  Sound.play('turn');
+  play.turnNo++;
+  if (play.drops.includes(play.turnNo)) startDrop(); else Sound.play('turn');
+}
+
+/* ----- Sürpriz kutu: maç başına 2 kez, rastgele bir turun başında uçak bırakır ----- */
+const CRATE_LOOT = [['heart', 35], ['fish', 35], ['balloon', 15], ['paint', 15]];
+function dropTurns() {
+  const a = 2 + Math.floor(rand(0, 3));          // 2.-4. tur
+  return [a, a + 2 + Math.floor(rand(0, 3))];    // ilkinden 2-4 tur sonra
+}
+function pickLoot() {
+  let n = rand(0, 100);
+  for (const [k, w] of CRATE_LOOT) if ((n -= w) < 0) return k;
+  return 'heart';
+}
+function startDrop() {
+  const T = play.T;
+  const far = c => play.teams.every(ch => Math.abs(c * B + B / 2 - ch.x) > 70);
+  let cols = [];
+  for (let c = 2; c <= COLS - 3; c++) if (T.top(c) >= T.water && far(c)) cols.push(c);
+  if (!cols.length) for (let c = 2; c <= COLS - 3; c++) if (T.top(c) >= T.water) cols.push(c);
+  const c = cols.length ? cols[Math.floor(rand(0, cols.length))] : spawnCol(T, COLS >> 1);
+  const dir = Math.random() < .5 ? 1 : -1;
+  play.plane = { x: dir > 0 ? -60 : W + 60, y: 96, vx: dir * 360, dropX: c * B + B / 2, crate: null };
+  play.phase = 'drop'; play.t = 0;
+  Sound.play('plane');
+}
+function updateAir(dt) {
+  const T = play.T, pl = play.plane;
+  if (pl) {
+    pl.x += pl.vx * dt;
+    if (!pl.crate && (pl.vx > 0 ? pl.x >= pl.dropX : pl.x <= pl.dropX)) {
+      pl.crate = { x: pl.dropX, y: pl.y + 30, vy: 0, chute: true, grounded: false, loot: pickLoot() };
+      play.crates.push(pl.crate);
+    }
+    if (pl.x < -80 || pl.x > W + 80) play.plane = null;
+  }
+  for (const cr of play.crates) {
+    const sup = () => T.solidAt(cr.x - 8, cr.y) || T.solidAt(cr.x + 8, cr.y);
+    if (cr.grounded && !sup()) { cr.grounded = false; cr.chute = false; cr.vy = 0; }
+    if (!cr.grounded) {
+      cr.vy = cr.chute ? 90 : Math.min(cr.vy + 900 * dt, 700);
+      let dy = cr.vy * dt;
+      while (dy > 0) {
+        const st = Math.min(4, dy); cr.y += st; dy -= st;
+        if (sup()) { cr.y = H - (Math.floor((H - 1 - cr.y) / B) + 1) * B; cr.vy = 0; cr.grounded = true; cr.chute = false; break; }
+      }
+      if (cr.y >= T.waterY) {
+        cr.gone = true; Sound.play('splash');
+        spawn(cr.x, T.waterY, 12, ['#C99A5B', '#4FB3F0', '#FFFFFF']);
+      }
+    }
+    if (!cr.gone) for (const ch of play.teams) {
+      if (Math.abs(ch.x - cr.x) < 20 && Math.abs(ch.y - cr.y) < 26) { collect(ch, cr); break; }
+    }
+  }
+  play.crates = play.crates.filter(cr => !cr.gone);
+}
+function collect(ch, cr) {
+  cr.gone = true;
+  let k = cr.loot;
+  if (k === 'heart' && ch.hearts >= 3) k = 'fish';
+  if (k === 'heart') { ch.hearts++; ch.hitShow = false; }
+  else {
+    ch.ammo[k] = (ch.ammo[k] || 0) + 1;
+    if (!ch.items.includes(k)) ch.items = ITEM_ORDER.filter(i => i === k || ch.items.includes(i));
+  }
+  Sound.play('pickup');
+  spawn(cr.x, cr.y - 12, 16, ['#FFD23F', '#FFFFFF', ch.color]);
+  words.push({ x: cr.x, y: cr.y - 10, word: '+1', spr: k === 'heart' ? 'heart' : ITEMS[k].spr, size: 30, t: 0, color: '#FFD23F' });
+}
+function drawAir() {
+  for (const cr of play.crates) {
+    const x = cr.x - 12, y = cr.y - 24;
+    if (cr.chute) {
+      ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x - 2, y - 22); ctx.lineTo(x + 2, y); ctx.moveTo(x + 26, y - 22); ctx.lineTo(x + 22, y); ctx.stroke();
+      drawSprite(ctx, SPR.chute, x - 3, y - 32, 3);
+    }
+    drawSprite(ctx, SPR.crate, x, y, 3);
+  }
+  const pl = play.plane;
+  if (pl) drawSprite(ctx, SPR.plane, pl.x - 24, pl.y - 9, 3, { flip: pl.vx < 0 });
 }
 
 /* ----- Karakter fiziği ----- */
@@ -643,7 +762,7 @@ function walk(ch, dir, dt) {
 function stepProj(p, dt) {
   const T = play.T, it = ITEMS[p.item];
   p.vx += play.wind * WIND_ACC * it.wind * dt;
-  p.vy += GRAV * dt;
+  p.vy += GRAV * (it.grav || 1) * dt;
   p.x += p.vx * dt; p.y += p.vy * dt; p.t += dt;
   if (p.x < -60 || p.x > W + 60 || p.y > H + 40 || p.t > 9) return { type: 'out' };
   for (const ch of play.teams) {
@@ -688,6 +807,10 @@ function explode(x, y, kind) {
     words.push({ x, y, word: it.word, size: 34, t: 0 });
     shake = 6;
   }
+  if (kind !== 'water') for (const cr of play.crates) {
+    if (!cr.gone && Math.hypot(cr.x - x, cr.y - 12 - y) < it.r + 12) collect(play.teams[p.owner], cr);
+  }
+  play.crates = play.crates.filter(cr => !cr.gone);
   for (const ch of play.teams) {
     if (ch.id === p.owner) continue; // kendine zarar yok
     const dx = ch.x - x, dy = (ch.y - 18) - y;
@@ -704,6 +827,7 @@ function aiPlan() {
   let item = 'snowball';
   if (me.items.includes('balloon') && me.ammo.balloon > 0 && Math.random() < .35) item = 'balloon';
   else if (me.items.includes('paint') && me.ammo.paint > 0 && Math.random() < .3) item = 'paint';
+  if (me.ammo.fish > 0 && Math.random() < .5) item = 'fish';
   const sx = me.x, sy = me.y - 24, dir = Math.sign(them.x - me.x) || -1;
   let best = null;
   for (let a = 15; a <= 80; a += 2.5) for (let pw = .3; pw <= 1.0001; pw += .025) {
@@ -730,9 +854,14 @@ function updatePlay(dt) {
   const T = play.T;
   play.t += dt;
   for (const ch of play.teams) charPhysics(ch, dt);
+  updateAir(dt);
   const ch = cur();
 
-  if (play.phase === 'banner') {
+  if (play.phase === 'drop') {
+    const cr = play.plane && play.plane.crate;
+    const done = play.plane ? cr && (cr.grounded || cr.gone) : true;
+    if (done || play.t > 8) { play.phase = 'banner'; play.t = 0; Sound.play('turn'); }
+  } else if (play.phase === 'banner') {
     if (play.t > 1.0) { play.phase = 'aim'; play.t = 0; }
   } else if (play.phase === 'aim') {
     if (ch.cpu) {
@@ -910,6 +1039,7 @@ function drawPlay(dt) {
   ctx.save();
   if (shake > 0) { ctx.translate(Math.round(rand(-shake, shake)), Math.round(rand(-shake, shake))); }
   drawWorldBg(T.theme, T);
+  drawAir();
   for (const c of play.teams) drawChar(c, c === ch);
 
   if (play.phase === 'banner' || play.phase === 'aim') {
@@ -973,7 +1103,7 @@ function drawProj(p) {
     const x = clamp(p.x, 20, W - 20);
     drawSprite(ctx, { map: [".X.", "XXX", "XXX"], pal: { X: '#FFD23F' }, w: 3, h: 3 }, x - 6, 4, 4);
     drawSprite(ctx, spr, x - spr.w, 20, 2);
-  } else drawSprite(ctx, spr, p.x - spr.w * 1.5, p.y - spr.h * 1.5, 3);
+  } else drawSprite(ctx, spr, p.x - spr.w * 1.5, p.y - spr.h * 1.5, 3, { flip: p.item === 'fish' && p.vx > 0 });
 }
 function drawHud() {
   const [a, b] = play.teams;
@@ -1149,5 +1279,5 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Test ve hata ayıklama için küçük bir kapı (oyunu etkilemez)
-window.__wob = { get play() { return play; }, get screen() { return screen; }, startMatch, Store, LEVELS, fire, aiPlan, walk };
+window.__wob = { get play() { return play; }, get screen() { return screen; }, startMatch, Store, LEVELS, fire, aiPlan, walk, startDrop };
 })();

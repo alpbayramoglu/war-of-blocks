@@ -19,6 +19,7 @@ Tam ekran ve çevrimdışı oynamak için: Safari'de **Paylaş → Ana Ekrana Ek
 - Sol alttaki oklarla karakter her turda biraz yürüyebilir.
 - Alttaki eşyalar: **kartopu** (sınırsız), **su balonu** (büyük patlar, rüzgârdan çok etkilenir), **boya küpü** (bir kez zıplar, patlayınca etrafı pembeye boyar). Balon ve boya maç başına birer tane.
 - Üstteki oklar rüzgârın yönünü ve gücünü gösterir.
+- Her maçta rastgele iki kez bir uçak geçip paraşütlü bir **sürpriz kutu** bırakır. Kutuya yürüyen ya da yakınına atış yapan alır. İçinden bir kalp (en fazla 3) ya da bir eşya çıkar: su balonu, boya küpü ya da yalnızca kutudan çıkan **balık** (daha düz ve uzağa uçar, rüzgârdan az etkilenir).
 - Rakibe isabet eden ya da suya düşen bir kalp kaybeder. Kalbi biten kaybeder.
 
 ## Dosyalar
